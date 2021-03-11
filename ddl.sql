@@ -46,6 +46,7 @@ declare
   v_sequence text = 'deps_sequence_' || md5(random()::text);
   v_verbose bool;
   v_dry bool;
+  v_populate bool;
   v_stmt text;
 begin
 
@@ -57,6 +58,7 @@ begin
   }'::jsonb || p_options;
   v_verbose = (p_options->'verbose')::bool;
   v_dry = (p_options->'dry_run')::bool;
+  v_populate = (p_options->'populate_materialized_view')::bool;
 
   if v_verbose then
     set local client_min_messages to 'debug';
@@ -548,7 +550,7 @@ begin
           end,
           trim(';' from definition),
           case
-            when true
+            when v_populate
               then 'WITH DATA'
             else 'WITH NO DATA'
           end
