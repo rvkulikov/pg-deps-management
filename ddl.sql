@@ -483,7 +483,7 @@ begin
                      pc.relname = 'view_material'
                 join pg_namespace pn
                   on pn.oid = pc.relnamespace and
-                     pn.nspname = 'upstream'
+                     pn.nspname = v_curr.obj_schema
             where
               pa.attisdropped = false and
               pa.attacl is not null
