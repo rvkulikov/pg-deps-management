@@ -393,11 +393,11 @@ begin
         v_curr.obj_name,
         nextval(v_sequence::regclass),
         format(
-          'GRANT %s ON %I.%I.%I TO %I %s',
+          'GRANT %s (%I) ON %I.%I TO %I %s',
           privilege_type,
+          column_name,
           table_schema,
           table_name,
-          column_name,
           grantee,
           case
             when is_grantable = 'YES'
@@ -426,11 +426,11 @@ begin
         v_curr.obj_name,
         nextval(v_sequence::regclass),
         format(
-          'GRANT %s ON %I.%I.%I to %I %s',
+          'GRANT %s (%I) ON %I.%I to %I %s',
           privilege_type,
+          column_name,
           table_schema,
           table_name,
-          column_name,
           grantee,
           case
             when is_grantable = 'YES'
