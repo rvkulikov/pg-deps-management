@@ -29,7 +29,7 @@ select public.deps_save_and_drop_dependencies(
   '{
     "dry_run": true,
     "verbose": false,
-    "populate_materialized_view": false,
+    "populate_materialized_view": false
   }'
 );
 
