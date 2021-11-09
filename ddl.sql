@@ -288,7 +288,7 @@ begin
           table_name,
           grantee,
           case
-            when is_grantable = 'YES' or with_hierarchy = 'YES'
+            when is_grantable = 'YES' -- or with_hierarchy = 'YES'
               then format(
                 'WITH %s OPTION',
                 array_to_string(ARRAY[
