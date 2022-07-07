@@ -1,0 +1,19 @@
+version: '3.7'
+
+services:
+  rvkulikov.pg-deps-management.pgsql:
+    image: postgres:13-alpine
+    environment:
+      - PGDATA=/var/lib/postgresql/data
+      - POSTGRES_DB=database
+      - POSTGRES_PASSWORD=password
+    restart: always
+    working_dir: /var/www/html
+    volumes:
+      - rvkulikov.pg-deps-management.pgsql.data:/var/lib/postgresql/data
+      - ./ddl.sql:/docker-entrypoint-initdb.d/ddl.sql
+      - ./tests/:/var/www/html/
+
+volumes:
+  rvkulikov.pg-deps-management.pgsql.data:
+    external: true
