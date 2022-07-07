@@ -520,6 +520,8 @@ begin
         information_schema.views
           join pg_class
             on pg_class.relname = v_curr.obj_name
+          join pg_namespace pn 
+            on (pg_class.relnamespace = pn.oid AND pn.nspname = v_curr.obj_schema)
       where
         table_schema = v_curr.obj_schema and
         table_name = v_curr.obj_name;
@@ -559,6 +561,8 @@ begin
         pg_matviews
           join pg_class
             on pg_class.relname = v_curr.obj_name
+          join pg_namespace pn 
+            on (pg_class.relnamespace = pn.oid AND pn.nspname = v_curr.obj_schema)
           join pg_am pa
             on pg_class.relam = pa.oid
           left join pg_tablespace pt
