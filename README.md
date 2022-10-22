@@ -1,4 +1,15 @@
-# What is this
+# First time?
+
+* Wanna move column in a table 'cause it hurts your inner perfectionist?
+* You new CTO/DBA decided that your current table layout must be optimized by 4 bytes per row or business will fail?
+* Your code standards changed and all inner joins must be rewritten with where again?
+* Uhm, why not to add some other columns for our primary table?
+* Simple grep in your migration directory for view definition give you 20 results?
+* You look at your migration and see copy-pasted 1000 sloc of other migrations. And the same for rollback?!
+
+![first time](.resources/first-time.jpg)
+
+## What is this
 
 Complex enhancement/refactoring of https://gist.github.com/mateuszwenus/11187288  
 See related topics https://wiki.postgresql.org/wiki/Todo#Views_and_Rules
