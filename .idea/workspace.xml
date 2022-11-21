@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="638ce439-4c00-465e-aae6-7e5db3205ae7" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/feature-8.sql" afterDir="false" />
+    <list default="true" id="638ce439-4c00-465e-aae6-7e5db3205ae7" name="Default Changelist" comment="chore: sorry, couldn't resist">
+      <change afterPath="$PROJECT_DIR$/tests/feature-10.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ddl.sql" beforeDir="false" afterPath="$PROJECT_DIR$/ddl.sql" afterDir="false" />
     </list>
@@ -25,6 +25,9 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
   <component name="ProjectId" id="1mOjBAHvLcxNSWzJAW7qeKqgitT" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -32,9 +35,23 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "nodejs_package_manager_path": "npm"
+    "WebServerToolWindowFactoryState": "false",
+    "full.screen.before.presentation.mode": "false",
+    "last_opened_file_path": "/home/roman/work/github/rvkulikov/pg-deps-management/tests",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/tests" />
+      <recent name="$PROJECT_DIR$/.resources" />
+    </key>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -44,7 +61,28 @@
       <option name="presentableId" value="Default" />
       <updated>1609371393725</updated>
       <workItem from="1609371395034" duration="1330000" />
+      <workItem from="1666398844845" duration="1908000" />
+      <workItem from="1668551682974" duration="5361000" />
+      <workItem from="1668597902682" duration="10000" />
+      <workItem from="1668748384591" duration="344000" />
+      <workItem from="1669053150193" duration="667000" />
+      <workItem from="1669062114407" duration="231000" />
     </task>
+    <task id="LOCAL-00001" summary="fix: join view with correct pg class row (#8)">
+      <created>1657227028744</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1657227028744</updated>
+    </task>
+    <task id="LOCAL-00002" summary="chore: sorry, couldn't resist">
+      <created>1666400148693</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1666400148693</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -60,5 +98,10 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="fix: join view with correct pg class row (#8)" />
+    <MESSAGE value="chore: sorry, couldn't resist" />
+    <option name="LAST_COMMIT_MESSAGE" value="chore: sorry, couldn't resist" />
   </component>
 </project>
