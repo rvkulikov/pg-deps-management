@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   rvkulikov.pg-deps-management.pgsql:
-    image: postgres:13-alpine
+    image: rvkulikov.pg-deps-management.pgsql:latest
     environment:
       - PGDATA=/var/lib/postgresql/data
       - POSTGRES_DB=database

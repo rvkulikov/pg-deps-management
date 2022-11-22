@@ -1,0 +1,5 @@
+# annotate_query extension
+comment = 'annotate_query'
+default_version = '1.0.0'
+module_pathname = '$libdir/annotate_query'
+relocatable = true

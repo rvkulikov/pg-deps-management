@@ -1,0 +1,7 @@
+-- complain if script is sourced in psql, rather than via CREATE EXTENSION
+\echo Use "CREATE EXTENSION annotate_query" to load this file. \quit
+
+CREATE OR REPLACE FUNCTION annotate_query(query text)
+RETURNS text
+AS '$libdir/annotate_query'
+LANGUAGE C IMMUTABLE STRICT;

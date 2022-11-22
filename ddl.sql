@@ -116,6 +116,8 @@ begin
               on rwr.ev_class = rwr_cl.oid
             join pg_namespace rwr_nsp
               on rwr_cl.relnamespace = rwr_nsp.oid
+            join pg_proc ref_prc
+              on dep.refobjid = ref_prc.oid
           where
             dep.deptype = 'n' and
             dep.classid = 'pg_rewrite'::regclass

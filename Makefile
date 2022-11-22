@@ -17,7 +17,7 @@ init: volume
 	docker-compose up -d
 	sleep 2
 
-reset: prune init
+reset: build prune init
 
 volume:
 	docker volume create --name rvkulikov.pg-deps-management.pgsql.data || true
@@ -25,3 +25,6 @@ volume:
 prune:
 	docker-compose rm -fsv
 	docker volume rm rvkulikov.pg-deps-management.pgsql.data || true
+
+build:
+	docker build -f "./docker/Dockerfile" -t rvkulikov.pg-deps-management.pgsql:latest .
