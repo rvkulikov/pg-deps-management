@@ -17,13 +17,18 @@ $$ language plpgsql;
 drop schema if exists feature13 cascade;
 create schema feature13;
 
+create role "PUBLIC";
+
 delete from public.deps_saved_ddl where true;
 
-create table feature13.table (col_1 text);
+create table feature13.table (col_1 text, col_2 text);
 create view feature13.view as select * from feature13.table;
 
-grant update on feature13.view to public;
-grant delete on feature13.view to public;
+grant select on feature13.view to public;
+grant insert on feature13.view to "PUBLIC";
+grant select (col_1) on feature13.view to "PUBLIC";
+grant update (col_2) on feature13.view to "PUBLIC";
+grant update (col_2) on feature13.view to public;
 
 select public.deps_save_and_drop_dependencies(
   'feature13',
@@ -37,11 +42,26 @@ select public.deps_save_and_drop_dependencies(
 
 select * from public.deps_saved_ddl;
 
-select public.deps_restore_dependencies(
-  'feature13',
-  'table',
-  '{
-   "dry_run": false,
-   "verbose": false
-  }'
-);
+select
+  util.__assert(
+      (select count(true) from public.deps_saved_ddl where trim(' ' from ddl_statement) = 'GRANT SELECT ON feature13.view TO public') = 1,
+      'Default PUBLIC role table grants ok'::text
+    );
+
+select
+  util.__assert(
+      (select count(true) from public.deps_saved_ddl where trim(' ' from ddl_statement) = 'GRANT INSERT ON feature13.view TO "PUBLIC"') = 1,
+      'Custom "PUBLIC" role table grants ok'::text
+    );
+
+select
+  util.__assert(
+      (select count(true) from public.deps_saved_ddl where trim(' ' from ddl_statement) = 'GRANT UPDATE (col_2) ON feature13.view TO public') = 1,
+      'Default PUBLIC role column grants ok'::text
+    );
+
+select
+  util.__assert(
+      (select count(true) from public.deps_saved_ddl where trim(' ' from ddl_statement) = 'GRANT UPDATE (col_2) ON feature13.view TO "PUBLIC"') = 1,
+      'Custom "PUBLIC" role column grants ok'::text
+    );
