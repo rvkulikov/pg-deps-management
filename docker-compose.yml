@@ -13,6 +13,8 @@ services:
       - rvkulikov.pg-deps-management.pgsql.data:/var/lib/postgresql/data
       - ./ddl.sql:/docker-entrypoint-initdb.d/ddl.sql
       - ./tests/:/var/www/html/
+    ports:
+      - "13456:5432"
 
 volumes:
   rvkulikov.pg-deps-management.pgsql.data:

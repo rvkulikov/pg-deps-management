@@ -23,6 +23,7 @@ create table if not exists public.deps_saved_ddl (
   dep_nsp_name name,
   dep_rel_name name,
   ddl_order int,
+  ddl_authorization text not null default 'default',
   ddl_statement text,
   ddl_at timestamptz default now(),
   constraint deps_saved_ddl_pk
@@ -434,13 +435,18 @@ begin
     if v_curr.obj_type = 'v' then
       raise debug 'Building view privilege grants';
       insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_statement)
+        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
       select
         p_src_nsp_name,
         p_src_rel_name,
         v_curr.obj_schema,
         v_curr.obj_name,
         nextval(v_sequence::regclass),
+        case
+          -- see #13
+          when grantor_id = 0 then 'public'
+          else grantor
+        end,
         format(
           'GRANT %s ON %I.%I TO %I %s',
           privilege_type,
@@ -471,13 +477,14 @@ begin
     elseif v_curr.obj_type = 'm' then
       raise debug 'Building material view privilege grants';
       insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_statement)
+        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
       select
         p_src_nsp_name,
         p_src_rel_name,
         table_schema,
         table_name,
         nextval(v_sequence::regclass),
+        grantor,
         format(
           'GRANT %s ON %I.%I to %I %s',
           privilege_type,
@@ -523,7 +530,7 @@ begin
           select
             table_schema,
             table_name,
-            (regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[3] as grantor,
+            coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[3], ''), 'public') as grantor,
             coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[1], ''), 'public') as grantee,
             (regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[2] as acl
           from (
@@ -549,13 +556,18 @@ begin
     if v_curr.obj_type = 'v' then
       raise debug 'Building view column privilege grants';
       insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_statement)
+        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
       select
         p_src_nsp_name,
         p_src_rel_name,
         v_curr.obj_schema,
         v_curr.obj_name,
         nextval(v_sequence::regclass),
+        case
+          -- see #13
+          when grantor_id = 0 then 'public'
+          else grantor
+        end,
         format(
           'GRANT %s (%I) ON %I.%I TO %I %s',
           privilege_type,
@@ -586,7 +598,7 @@ begin
     elseif v_curr.obj_type = 'm' then
       raise debug 'Building material view column privilege grants';
       insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_statement)
+        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
       select
         p_src_nsp_name,
         p_src_rel_name,
@@ -599,6 +611,7 @@ begin
           column_name,
           table_schema,
           table_name,
+          grantor,
           grantee,
           case
             when is_grantable = 'YES'
@@ -635,7 +648,7 @@ begin
             table_schema,
             table_name,
             column_name,
-            (regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[3] as grantor,
+            coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[3], ''), 'public') as grantor,
             coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[1], ''), 'public') as grantee,
             (regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[2] as acl
           from (
@@ -806,6 +819,7 @@ begin
 
   for v_curr in (
     select
+      ddl_authorization,
       ddl_statement
     from
       public.deps_saved_ddl
@@ -817,8 +831,19 @@ begin
   ) loop
 
     if not v_dry then
+      if(v_curr.ddl_authorization = 'default') then
+        raise debug 'Changing session authorization to default';
+        execute 'set session authorization default';
+      else
+        raise debug 'Changing session authorization to %', v_curr.ddl_authorization;
+        execute format('set session authorization %I', v_curr.ddl_authorization);
+      end if;
+
       raise debug 'Executing ddl statement: %', v_curr.ddl_statement;
       execute v_curr.ddl_statement;
+
+      raise debug 'Returning session authorization to default';
+      execute 'set session authorization default';
     else
       raise debug 'Skipping ddl statement: %', v_curr.ddl_statement;
     end if;
