@@ -1,0 +1,52 @@
+-- @see https://github.com/rvkulikov/pg-deps-management/issues/14
+-- Grantee of a access right is not recorded
+
+drop schema if exists util cascade;
+create schema util;
+
+create or replace function util.__assert(condition boolean, message text) returns void as $$
+begin
+  if not condition then
+    raise exception 'Asserting failed: %', message;
+  end if;
+end;
+$$ language plpgsql;
+
+do $$ begin
+  create role "feature14_grantor1";
+exception
+  when duplicate_object
+    then raise notice 'not creating role "feature14_grantor1"';
+end $$;
+do $$ begin
+  create role "feature14_grantor2";
+exception
+  when duplicate_object
+    then raise notice 'not creating role "feature14_grantor2"';
+end $$;
+
+drop schema if exists feature14 cascade;
+create schema feature14;
+
+delete from public.deps_saved_ddl where true;
+
+create table feature14.table (col_1 text, col_2 text);
+create view feature14.view as select * from feature14.table;
+
+
+grant select, insert, update, delete on feature14.view to feature14_grantor1 with grant option;
+set session authorization feature14_grantor1;
+grant select on feature14.view to "feature14_grantor2";
+set session authorization default;
+
+select public.deps_save_and_drop_dependencies(
+  'feature14',
+  'table',
+  '{
+    "dry_run": false,
+    "verbose": true,
+    "populate_materialized_view": true
+  }'
+);
+
+select * from public.deps_saved_ddl;

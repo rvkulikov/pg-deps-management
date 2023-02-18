@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="638ce439-4c00-465e-aae6-7e5db3205ae7" name="Default Changelist" comment="feat(Common): WIP reproduced (#13)">
+    <list default="true" id="638ce439-4c00-465e-aae6-7e5db3205ae7" name="Default Changelist" comment="feat(Common): fixed (#13)">
+      <change afterPath="$PROJECT_DIR$/tests/feature-14.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ddl.sql" beforeDir="false" afterPath="$PROJECT_DIR$/ddl.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/feature-13.sql" beforeDir="false" afterPath="$PROJECT_DIR$/tests/feature-13.sql" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,6 +24,9 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
   <component name="ProjectId" id="1mOjBAHvLcxNSWzJAW7qeKqgitT" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -33,12 +34,16 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
     "last_opened_file_path": "/home/roman/work/github/rvkulikov/pg-deps-management/tests",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm"
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -55,6 +60,9 @@
       <option name="presentableId" value="Default" />
       <updated>1609371393725</updated>
       <workItem from="1609371395034" duration="1330000" />
+      <workItem from="1676538748220" duration="1014000" />
+      <workItem from="1676554298027" duration="653000" />
+      <workItem from="1676706118053" duration="306000" />
     </task>
     <task id="LOCAL-00001" summary="feat(Common): WIP reproduced (#13)">
       <created>1676497116259</created>
@@ -63,7 +71,14 @@
       <option name="project" value="LOCAL" />
       <updated>1676497116259</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="feat(Common): fixed (#13)">
+      <created>1676501546551</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1676501546551</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -82,6 +97,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat(Common): WIP reproduced (#13)" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(Common): WIP reproduced (#13)" />
+    <MESSAGE value="feat(Common): fixed (#13)" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(Common): fixed (#13)" />
   </component>
 </project>
