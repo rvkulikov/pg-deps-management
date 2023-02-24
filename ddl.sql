@@ -433,127 +433,6 @@ begin
       pc.relname = v_curr.obj_name;
 
     if v_curr.obj_type = 'v' then
-      raise debug 'Building view privilege grants';
-      insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
-      select
-        p_src_nsp_name,
-        p_src_rel_name,
-        v_curr.obj_schema,
-        v_curr.obj_name,
-        nextval(v_sequence::regclass),
-        case
-          -- see #13
-          when grantor_id = 0 then 'public'
-          else grantor
-        end,
-        format(
-          'GRANT %s ON %I.%I TO %I %s',
-          privilege_type,
-          table_schema,
-          table_name,
-          case
-            -- see #13
-            when grantee_id = 0 then 'public'
-            else grantee
-          end,
-          case
-            when is_grantable = 'YES' -- or with_hierarchy = 'YES'
-              then format(
-                'WITH %s OPTION',
-                array_to_string(ARRAY[
-                  case when is_grantable = 'YES' then 'GRANT' else '' end
-               -- case when with_hierarchy = 'YES' then 'HIERARCHY' else '' end -- for the future, todo ask postgres pro community
-                ]::text[], ' ')
-              )
-            else ''
-          end
-        )
-      from
-        _role_table_grants
-      where
-        table_schema = v_curr.obj_schema and
-        table_name = v_curr.obj_name;
-    elseif v_curr.obj_type = 'm' then
-      raise debug 'Building material view privilege grants';
-      insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
-      select
-        p_src_nsp_name,
-        p_src_rel_name,
-        table_schema,
-        table_name,
-        nextval(v_sequence::regclass),
-        grantor,
-        format(
-          'GRANT %s ON %I.%I to %I %s',
-          privilege_type,
-          table_schema,
-          table_name,
-          grantee,
-          case
-            when is_grantable = 'YES'
-              then format(
-                'WITH %s OPTION',
-                array_to_string(ARRAY[
-                  case when is_grantable = 'YES' then 'GRANT' else '' end
-                ]::text[], ' ')
-              )
-            else ''
-          end
-        )
-      from (
-        select
-          table_schema,
-          table_name,
-          grantor,
-          grantee,
-          unnest(ARRAY[
-            case when acl ~ 'a|a\*' then 'INSERT' end,
-            case when acl ~ 'r|r\*' then 'SELECT' end,
-            case when acl ~ 'w|w\*' then 'UPDATE' end,
-            case when acl ~ 'd|d\*' then 'DELETE' end,
-            case when acl ~ 'D|D\*' then 'TRUNCATE' end,
-            case when acl ~ 'x|x\*' then 'REFERENCES' end,
-            case when acl ~ 't|t\*' then 'TRIGGER' end
-          ]::text[]) as privilege_type,
-          unnest(ARRAY[
-            case when acl ~ 'a\*' then 'YES' else 'NO' end,
-            case when acl ~ 'r\*' then 'YES' else 'NO' end,
-            case when acl ~ 'w\*' then 'YES' else 'NO' end,
-            case when acl ~ 'd\*' then 'YES' else 'NO' end,
-            case when acl ~ 'D\*' then 'YES' else 'NO' end,
-            case when acl ~ 'x\*' then 'YES' else 'NO' end,
-            case when acl ~ 't\*' then 'YES' else 'NO' end
-          ]::text[]) as is_grantable
-        from (
-          select
-            table_schema,
-            table_name,
-            coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[3], ''), 'public') as grantor,
-            coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[1], ''), 'public') as grantee,
-            (regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[2] as acl
-          from (
-            select
-              pn.nspname as table_schema,
-              pc.relname as table_name,
-              unnest(pc.relacl)::text as acl
-            from
-              pg_class pc
-                inner join pg_namespace pn
-                  on pn.oid = pc.relnamespace and
-                     pn.nspname = v_curr.obj_schema
-            where
-              pc.relname = v_curr.obj_name
-          ) as v1
-        ) as v2
-      ) as v3
-      where
-        privilege_type is not null;
-    end if;
-
-
-    if v_curr.obj_type = 'v' then
       raise debug 'Building view column privilege grants';
       insert into
         public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
@@ -675,6 +554,125 @@ begin
         privilege_type is not null;
     end if;
 
+    if v_curr.obj_type = 'v' then
+      raise debug 'Building view privilege grants';
+      insert into
+        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
+      select
+        p_src_nsp_name,
+        p_src_rel_name,
+        v_curr.obj_schema,
+        v_curr.obj_name,
+        nextval(v_sequence::regclass),
+        case
+          -- see #13
+          when grantor_id = 0 then 'public'
+          else grantor
+          end,
+        format(
+          'GRANT %s ON %I.%I TO %I %s',
+          privilege_type,
+          table_schema,
+          table_name,
+          case
+            -- see #13
+            when grantee_id = 0 then 'public'
+            else grantee
+            end,
+          case
+            when is_grantable = 'YES' -- or with_hierarchy = 'YES'
+              then format(
+              'WITH %s OPTION',
+              array_to_string(ARRAY[
+                                case when is_grantable = 'YES' then 'GRANT' else '' end
+                                -- case when with_hierarchy = 'YES' then 'HIERARCHY' else '' end -- for the future, todo ask postgres pro community
+                                ]::text[], ' ')
+              )
+            else ''
+            end
+          )
+      from
+        _role_table_grants
+      where
+          table_schema = v_curr.obj_schema and
+          table_name = v_curr.obj_name;
+    elseif v_curr.obj_type = 'm' then
+      raise debug 'Building material view privilege grants';
+      insert into
+        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
+      select
+        p_src_nsp_name,
+        p_src_rel_name,
+        table_schema,
+        table_name,
+        nextval(v_sequence::regclass),
+        grantor,
+        format(
+          'GRANT %s ON %I.%I to %I %s',
+          privilege_type,
+          table_schema,
+          table_name,
+          grantee,
+          case
+            when is_grantable = 'YES'
+              then format(
+              'WITH %s OPTION',
+              array_to_string(ARRAY[
+                                case when is_grantable = 'YES' then 'GRANT' else '' end
+                                ]::text[], ' ')
+              )
+            else ''
+            end
+          )
+      from (
+             select
+               table_schema,
+               table_name,
+               grantor,
+               grantee,
+               unnest(ARRAY[
+                 case when acl ~ 'a|a\*' then 'INSERT' end,
+                 case when acl ~ 'r|r\*' then 'SELECT' end,
+                 case when acl ~ 'w|w\*' then 'UPDATE' end,
+                 case when acl ~ 'd|d\*' then 'DELETE' end,
+                 case when acl ~ 'D|D\*' then 'TRUNCATE' end,
+                 case when acl ~ 'x|x\*' then 'REFERENCES' end,
+                 case when acl ~ 't|t\*' then 'TRIGGER' end
+                 ]::text[]) as privilege_type,
+               unnest(ARRAY[
+                 case when acl ~ 'a\*' then 'YES' else 'NO' end,
+                 case when acl ~ 'r\*' then 'YES' else 'NO' end,
+                 case when acl ~ 'w\*' then 'YES' else 'NO' end,
+                 case when acl ~ 'd\*' then 'YES' else 'NO' end,
+                 case when acl ~ 'D\*' then 'YES' else 'NO' end,
+                 case when acl ~ 'x\*' then 'YES' else 'NO' end,
+                 case when acl ~ 't\*' then 'YES' else 'NO' end
+                 ]::text[]) as is_grantable
+             from (
+                    select
+                      table_schema,
+                      table_name,
+                      coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[3], ''), 'public') as grantor,
+                      coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[1], ''), 'public') as grantee,
+                      (regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[2] as acl
+                    from (
+                           select
+                             pn.nspname as table_schema,
+                             pc.relname as table_name,
+                             unnest(pc.relacl)::text as acl
+                           from
+                             pg_class pc
+                               inner join pg_namespace pn
+                                          on pn.oid = pc.relnamespace and
+                                             pn.nspname = v_curr.obj_schema
+                           where
+                               pc.relname = v_curr.obj_name
+                         ) as v1
+                  ) as v2
+           ) as v3
+      where
+        privilege_type is not null;
+    end if;
 
     if v_curr.obj_type = 'v' then
       raise debug 'Building view ddl';
