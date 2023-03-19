@@ -55,7 +55,7 @@ select public.deps_save_and_drop_dependencies(
   }'
 );
 
-select ddl_order, ddl_authorization, ddl_statement from public.deps_saved_ddl;
+select ddl_order, ddl_operation, ddl_authorization, ddl_grantor, ddl_grantee, ddl_statement from public.deps_saved_ddl;
 
 select public.deps_restore_dependencies(
   'feature14',

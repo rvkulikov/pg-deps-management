@@ -25,6 +25,9 @@ create table if not exists public.deps_saved_ddl (
   ddl_order int,
   ddl_authorization text not null default 'default',
   ddl_statement text,
+  ddl_operation text,
+  ddl_grantor text,
+  ddl_grantee text,
   ddl_at timestamptz default now(),
   constraint deps_saved_ddl_pk
     primary key (src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order)
@@ -230,10 +233,6 @@ begin
                                              FROM information_schema.enabled_roles));
 
 
-
-
-
-
   raise debug 'flush previous ddl';
   delete from
     public.deps_saved_ddl
@@ -309,14 +308,24 @@ begin
     raise debug 'Dumping view: %.% %', v_curr.obj_schema, v_curr.obj_name, v_curr.obj_type;
 
     raise debug 'Building owners';
-    insert into
-      public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_statement)
+    insert into public.deps_saved_ddl(
+      src_nsp_name,
+      src_rel_name,
+      dep_nsp_name,
+      dep_rel_name,
+      ddl_order,
+      ddl_authorization,
+      ddl_operation,
+      ddl_statement
+    )
     select distinct
       p_src_nsp_name,
       p_src_rel_name,
       v_curr.obj_schema,
       v_curr.obj_name,
       nextval(v_sequence::regclass),
+      'default',
+      'alter owner',
       format(
         'ALTER %s %I.%I OWNER TO %I',
         case
@@ -338,14 +347,22 @@ begin
       pc.relname = v_curr.obj_name;
 
     raise debug 'Building indexes';
-    insert into
-      public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_statement)
+    insert into public.deps_saved_ddl(
+      src_nsp_name,
+      src_rel_name,
+      dep_nsp_name,
+      dep_rel_name,
+      ddl_order,
+      ddl_operation,
+      ddl_statement
+    )
     select distinct
       p_src_nsp_name,
       p_src_rel_name,
       v_curr.obj_schema,
       v_curr.obj_name,
       nextval(v_sequence::regclass),
+      'create index',
       indexdef
     from
       pg_indexes
@@ -354,14 +371,22 @@ begin
       tablename = v_curr.obj_name;
 
     raise debug 'Building rules';
-    insert into
-      public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_statement)
+    insert into public.deps_saved_ddl(
+      src_nsp_name,
+      src_rel_name,
+      dep_nsp_name,
+      dep_rel_name,
+      ddl_order,
+      ddl_operation,
+      ddl_statement
+    )
     select distinct
       p_src_nsp_name,
       p_src_rel_name,
       v_curr.obj_schema,
       v_curr.obj_name,
       nextval(v_sequence::regclass),
+      'create rule',
       definition
     from
       pg_rules
@@ -370,14 +395,22 @@ begin
       tablename = v_curr.obj_name;
 
     raise debug 'Building view comments';
-    insert into
-      public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_statement)
+    insert into public.deps_saved_ddl(
+      src_nsp_name,
+      src_rel_name,
+      dep_nsp_name,
+      dep_rel_name,
+      ddl_order,
+      ddl_operation,
+      ddl_statement
+    )
     select
       p_src_nsp_name,
       p_src_rel_name,
       v_curr.obj_schema,
       v_curr.obj_name,
       nextval(v_sequence::regclass),
+      'comment on table',
       format(
         'COMMENT ON %s %I.%I IS %L',
         case
@@ -403,14 +436,22 @@ begin
       pc.relname = v_curr.obj_name;
 
     raise debug 'Building column comments';
-    insert into
-      public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_statement)
+    insert into public.deps_saved_ddl(
+      src_nsp_name,
+      src_rel_name,
+      dep_nsp_name,
+      dep_rel_name,
+      ddl_order,
+      ddl_operation,
+      ddl_statement
+    )
     select
       p_src_nsp_name,
       p_src_rel_name,
       v_curr.obj_schema,
       v_curr.obj_name,
       nextval(v_sequence::regclass),
+      'comment on column',
       format(
         'COMMENT ON COLUMN %I.%I.%I IS %L',
         pn.nspname,
@@ -427,15 +468,25 @@ begin
           on pc.oid = pa.attrelid
         inner join pg_description pd
           on pd.objoid = pc.oid and
-             pd.objsubid = pa.attnum and
-             pd.description is not null
+             pd.objsubid = pa.attnum
     where
       pc.relname = v_curr.obj_name;
 
+    -- Building view column privilege grants
     if v_curr.obj_type = 'v' then
       raise debug 'Building view column privilege grants';
-      insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
+      insert into public.deps_saved_ddl(
+        src_nsp_name,
+        src_rel_name,
+        dep_nsp_name,
+        dep_rel_name,
+        ddl_order,
+        ddl_authorization,
+        ddl_operation,
+        ddl_grantor,
+        ddl_grantee,
+        ddl_statement
+      )
       select
         p_src_nsp_name,
         p_src_rel_name,
@@ -445,6 +496,17 @@ begin
         case
           -- see #13
           when grantor_id = 0 then 'public'
+          else grantor
+        end,
+        'grant column',
+        case
+          -- see #13
+          when grantor_id = 0 then 'public'
+          else grantor
+        end,
+        case
+          -- see #13
+          when grantee_id = 0 then 'public'
           else grantor
         end,
         format(
@@ -474,16 +536,42 @@ begin
       where
         table_schema = v_curr.obj_schema and
         table_name = v_curr.obj_name;
-    elseif v_curr.obj_type = 'm' then
+    end if;
+
+    -- Building material view column privilege grants
+    if v_curr.obj_type = 'm' then
       raise debug 'Building material view column privilege grants';
-      insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
+      insert into public.deps_saved_ddl(
+        src_nsp_name,
+        src_rel_name,
+        dep_nsp_name,
+        dep_rel_name,
+        ddl_order,
+        ddl_authorization,
+        ddl_operation,
+        ddl_grantor,
+        ddl_grantee,
+        ddl_statement
+      )
       select
         p_src_nsp_name,
         p_src_rel_name,
         v_curr.obj_schema,
         v_curr.obj_name,
         nextval(v_sequence::regclass),
+        case
+          when grantor_id = 0 then 'public'
+          else grantor
+        end,
+        'grant column',
+        case
+          when grantor_id = 0 then 'public'
+          else grantor
+        end,
+        case
+          when grantee_id = 0 then 'public'
+          else grantor
+        end,
         format(
           'GRANT %s (%I) ON %I.%I to %I %s',
           privilege_type,
@@ -554,10 +642,21 @@ begin
         privilege_type is not null;
     end if;
 
+    -- Building view privilege grants
     if v_curr.obj_type = 'v' then
       raise debug 'Building view privilege grants';
-      insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
+      insert into public.deps_saved_ddl(
+        src_nsp_name,
+        src_rel_name,
+        dep_nsp_name,
+        dep_rel_name,
+        ddl_order,
+        ddl_authorization,
+        ddl_operation,
+        ddl_grantor,
+        ddl_grantee,
+        ddl_statement
+      )
       select
         p_src_nsp_name,
         p_src_rel_name,
@@ -565,10 +664,18 @@ begin
         v_curr.obj_name,
         nextval(v_sequence::regclass),
         case
-          -- see #13
           when grantor_id = 0 then 'public'
           else grantor
-          end,
+        end,
+        'grant table',
+        case
+          when grantor_id = 0 then 'public'
+          else grantor
+        end,
+        case
+          when grantee_id = 0 then 'public'
+          else grantor
+        end,
         format(
           'GRANT %s ON %I.%I TO %I %s',
           privilege_type,
@@ -578,35 +685,60 @@ begin
             -- see #13
             when grantee_id = 0 then 'public'
             else grantee
-            end,
+          end,
           case
             when is_grantable = 'YES' -- or with_hierarchy = 'YES'
               then format(
-              'WITH %s OPTION',
-              array_to_string(ARRAY[
-                                case when is_grantable = 'YES' then 'GRANT' else '' end
-                                -- case when with_hierarchy = 'YES' then 'HIERARCHY' else '' end -- for the future, todo ask postgres pro community
-                                ]::text[], ' ')
+                'WITH %s OPTION',
+                array_to_string(ARRAY[
+                  case when is_grantable = 'YES' then 'GRANT' else '' end
+               -- case when with_hierarchy = 'YES' then 'HIERARCHY' else '' end -- for the future, todo ask postgres pro community
+                ]::text[], ' ')
               )
             else ''
-            end
-          )
+          end
+        )
       from
         _role_table_grants
       where
-          table_schema = v_curr.obj_schema and
-          table_name = v_curr.obj_name;
-    elseif v_curr.obj_type = 'm' then
+        table_schema = v_curr.obj_schema and
+        table_name = v_curr.obj_name;
+    end if;
+
+    -- Building material view privilege grants
+    if v_curr.obj_type = 'm' then
       raise debug 'Building material view privilege grants';
-      insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_authorization, ddl_statement)
+      insert into public.deps_saved_ddl(
+        src_nsp_name,
+        src_rel_name,
+        dep_nsp_name,
+        dep_rel_name,
+        ddl_order,
+        ddl_authorization,
+        ddl_operation,
+        ddl_grantor,
+        ddl_grantee,
+        ddl_statement
+      )
       select
         p_src_nsp_name,
         p_src_rel_name,
         table_schema,
         table_name,
         nextval(v_sequence::regclass),
-        grantor,
+        case
+          when grantor_id = 0 then 'public'
+          else grantor
+        end,
+        'grant table',
+        case
+          when grantor_id = 0 then 'public'
+          else grantor
+        end,
+        case
+          when grantee_id = 0 then 'public'
+          else grantor
+        end,
         format(
           'GRANT %s ON %I.%I to %I %s',
           privilege_type,
@@ -616,74 +748,83 @@ begin
           case
             when is_grantable = 'YES'
               then format(
-              'WITH %s OPTION',
-              array_to_string(ARRAY[
-                                case when is_grantable = 'YES' then 'GRANT' else '' end
-                                ]::text[], ' ')
+                'WITH %s OPTION',
+                array_to_string(ARRAY[
+                  case when is_grantable = 'YES' then 'GRANT' else '' end
+                ]::text[], ' ')
               )
             else ''
-            end
-          )
+          end
+        )
       from (
-             select
-               table_schema,
-               table_name,
-               grantor,
-               grantee,
-               unnest(ARRAY[
-                 case when acl ~ 'a|a\*' then 'INSERT' end,
-                 case when acl ~ 'r|r\*' then 'SELECT' end,
-                 case when acl ~ 'w|w\*' then 'UPDATE' end,
-                 case when acl ~ 'd|d\*' then 'DELETE' end,
-                 case when acl ~ 'D|D\*' then 'TRUNCATE' end,
-                 case when acl ~ 'x|x\*' then 'REFERENCES' end,
-                 case when acl ~ 't|t\*' then 'TRIGGER' end
-                 ]::text[]) as privilege_type,
-               unnest(ARRAY[
-                 case when acl ~ 'a\*' then 'YES' else 'NO' end,
-                 case when acl ~ 'r\*' then 'YES' else 'NO' end,
-                 case when acl ~ 'w\*' then 'YES' else 'NO' end,
-                 case when acl ~ 'd\*' then 'YES' else 'NO' end,
-                 case when acl ~ 'D\*' then 'YES' else 'NO' end,
-                 case when acl ~ 'x\*' then 'YES' else 'NO' end,
-                 case when acl ~ 't\*' then 'YES' else 'NO' end
-                 ]::text[]) as is_grantable
-             from (
-                    select
-                      table_schema,
-                      table_name,
-                      coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[3], ''), 'public') as grantor,
-                      coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[1], ''), 'public') as grantee,
-                      (regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[2] as acl
-                    from (
-                           select
-                             pn.nspname as table_schema,
-                             pc.relname as table_name,
-                             unnest(pc.relacl)::text as acl
-                           from
-                             pg_class pc
-                               inner join pg_namespace pn
-                                          on pn.oid = pc.relnamespace and
-                                             pn.nspname = v_curr.obj_schema
-                           where
-                               pc.relname = v_curr.obj_name
-                         ) as v1
-                  ) as v2
-           ) as v3
+        select
+          table_schema,
+          table_name,
+          grantor,
+          grantee,
+          unnest(ARRAY[
+            case when acl ~ 'a|a\*' then 'INSERT' end,
+            case when acl ~ 'r|r\*' then 'SELECT' end,
+            case when acl ~ 'w|w\*' then 'UPDATE' end,
+            case when acl ~ 'd|d\*' then 'DELETE' end,
+            case when acl ~ 'D|D\*' then 'TRUNCATE' end,
+            case when acl ~ 'x|x\*' then 'REFERENCES' end,
+            case when acl ~ 't|t\*' then 'TRIGGER' end
+          ]::text[]) as privilege_type,
+          unnest(ARRAY[
+            case when acl ~ 'a\*' then 'YES' else 'NO' end,
+            case when acl ~ 'r\*' then 'YES' else 'NO' end,
+            case when acl ~ 'w\*' then 'YES' else 'NO' end,
+            case when acl ~ 'd\*' then 'YES' else 'NO' end,
+            case when acl ~ 'D\*' then 'YES' else 'NO' end,
+            case when acl ~ 'x\*' then 'YES' else 'NO' end,
+            case when acl ~ 't\*' then 'YES' else 'NO' end
+          ]::text[]) as is_grantable
+        from (
+          select
+            table_schema,
+            table_name,
+            coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[3], ''), 'public') as grantor,
+            coalesce(nullif((regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[1], ''), 'public') as grantee,
+            (regexp_match(acl, '([^=]*)=([^/]+)/(.+)'))[2] as acl
+          from (
+            select
+              pn.nspname as table_schema,
+              pc.relname as table_name,
+              unnest(pc.relacl)::text as acl
+            from
+              pg_class pc
+                inner join pg_namespace pn
+                  on pn.oid = pc.relnamespace and
+                     pn.nspname = v_curr.obj_schema
+            where
+              pc.relname = v_curr.obj_name
+          ) as v1
+        ) as v2
+      ) as v3
       where
         privilege_type is not null;
     end if;
 
+    -- Building view ddl
     if v_curr.obj_type = 'v' then
       raise debug 'Building view ddl';
-      insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_statement)
+      insert into public.deps_saved_ddl(
+        src_nsp_name,
+        src_rel_name,
+        dep_nsp_name,
+        dep_rel_name,
+        ddl_order,
+        ddl_operation,
+        ddl_statement
+      )
       select
         p_src_nsp_name,
         p_src_rel_name,
         v_curr.obj_schema,
         v_curr.obj_name,
         nextval(v_sequence::regclass),
+        'create table',
         format(
           'CREATE VIEW %I.%I %s AS %s',
           v_curr.obj_schema,
@@ -705,16 +846,27 @@ begin
       where
         table_schema = v_curr.obj_schema and
         table_name = v_curr.obj_name;
-    elseif v_curr.obj_type = 'm' then
+    end if;
+
+    -- Building materialized view ddl
+    if v_curr.obj_type = 'm' then
       raise debug 'Building materialized view ddl';
-      insert into
-        public.deps_saved_ddl(src_nsp_name, src_rel_name, dep_nsp_name, dep_rel_name, ddl_order, ddl_statement)
+      insert into public.deps_saved_ddl(
+        src_nsp_name,
+        src_rel_name,
+        dep_nsp_name,
+        dep_rel_name,
+        ddl_order,
+        ddl_operation,
+        ddl_statement
+      )
       select
         p_src_nsp_name,
         p_src_rel_name,
         v_curr.obj_schema,
         v_curr.obj_name,
         nextval(v_sequence::regclass),
+        'create view',
         format(
           'CREATE MATERIALIZED VIEW %I.%I %s %s %s AS %s %s',
           v_curr.obj_schema,
