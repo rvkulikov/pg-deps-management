@@ -106,10 +106,10 @@ begin
                      (aclexplode(COALESCE(pg_class.relacl, acldefault('r'::"char", pg_class.relowner)))).is_grantable   AS is_grantable
               FROM pg_class) c(oid, relname, relnamespace, relkind, relowner, grantor, grantee, prtype, grantable),
              pg_namespace nc,
-             pg_authid u_grantor,
-             (SELECT pg_authid.oid,
-                     pg_authid.rolname
-              FROM pg_authid
+             pg_roles u_grantor,
+             (SELECT pg_roles.oid,
+                     pg_roles.rolname
+              FROM pg_roles
               UNION ALL
               SELECT 0::oid AS oid,
                      'PUBLIC'::name) grantee(oid, rolname)
@@ -199,10 +199,10 @@ begin
               WHERE pr_a.attrelid = c.oid
                 AND (c.relkind = ANY (ARRAY ['r'::"char", 'v'::"char", 'f'::"char", 'p'::"char"]))) x,
              pg_namespace nc,
-             pg_authid u_grantor,
-             (SELECT pg_authid.oid,
-                     pg_authid.rolname
-              FROM pg_authid
+             pg_roles u_grantor,
+             (SELECT pg_roles.oid,
+                     pg_roles.rolname
+              FROM pg_roles
               UNION ALL
               SELECT 0::oid AS oid,
                      'PUBLIC'::name) grantee(oid, rolname)
