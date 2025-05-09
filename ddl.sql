@@ -508,7 +508,8 @@ begin
             case when acl ~ 'd|d\*' then 'DELETE' end,
             case when acl ~ 'D|D\*' then 'TRUNCATE' end,
             case when acl ~ 'x|x\*' then 'REFERENCES' end,
-            case when acl ~ 't|t\*' then 'TRIGGER' end
+            case when acl ~ 't|t\*' then 'TRIGGER' end,
+            case when acl ~ 'm|m\*' then 'MAINTAIN' end
           ]::text[]) as privilege_type,
           unnest(ARRAY[
             case when acl ~ 'a\*' then 'YES' else 'NO' end,
@@ -517,7 +518,8 @@ begin
             case when acl ~ 'd\*' then 'YES' else 'NO' end,
             case when acl ~ 'D\*' then 'YES' else 'NO' end,
             case when acl ~ 'x\*' then 'YES' else 'NO' end,
-            case when acl ~ 't\*' then 'YES' else 'NO' end
+            case when acl ~ 't\*' then 'YES' else 'NO' end,
+            case when acl ~ 'm\*' then 'YES' else 'NO' end
           ]::text[]) as is_grantable
         from (
           select
