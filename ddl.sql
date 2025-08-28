@@ -771,6 +771,12 @@ begin
     v_sequence
   );
 
+  raise debug 'Dropping temp view: _role_table_grants';
+  drop view _role_table_grants;
+
+  raise debug 'Dropping temp view: _role_column_grants';
+  drop view _role_column_grants;
+
   if v_verbose then
     reset client_min_messages;
   end if;
